@@ -21,51 +21,80 @@ typography:
     - "Inter"
     - "Manrope"
     - "system-ui"
-  base_size: "14px on desktop controls and operational content"
-  mobile_form_size: "16px below 768px"
+  base_size: "16px inherited body; 14px text-sm controls"
+  mobile_form_size: "16px native input/select/textarea below 768px"
 ---
 
 # shadcn-admin 2.2.1 Design System
 
-## Purpose and Scope
+[English](DESIGN.md) | [简体中文](DESIGN.zh-CN.md)
 
-Use this document to create or modify operational admin interfaces in the visual language of [satnaing/shadcn-admin v2.2.1](https://github.com/satnaing/shadcn-admin/releases/tag/v2.2.1). It translates the checked-in theme variables, Tailwind classes, Radix primitives, and page compositions into an AI-readable design contract.
+<a id="scope"></a>
+## Purpose, Scope, and Evidence
 
-The version in this document is the shadcn-admin application version. It is not a universal shadcn/ui version or a promise that current registry components have the same API. The source inside the consuming project wins whenever it differs from current shadcn/ui documentation.
+This is an independent design contract for AI coding agents building operational admin interfaces from **shadcn-admin 2.2.1**, not a universal shadcn/ui version. It covers visual foundations, installed components, page composition, interaction states, responsive behavior, and the limits of the demo. It does not supply component APIs, production authentication, permissions, business rules, or backend contracts.
 
-This system is for dashboards, data management, settings, authentication, chat, and other repeated-work surfaces. It is not a marketing-site style. Preserve application behavior, routing, data contracts, permissions, and local component customizations while applying these visual rules.
+The source baseline is upstream tag `v2.2.1`, commit [`0217f8cb73af66f3cbf4141d5e0d00e1c5c30434`][upstream]. The 2026-09-08 static audit matched all 247 upstream file blobs to the local reference snapshot. The live demo and latest documentation may have moved on; they are not version evidence.
 
+| Marker | Meaning | How an agent should use it |
+| --- | --- | --- |
+| **S** | Source fact: local configuration, classes, props, route or handler in the pinned snapshot | Reproduce the relevant composition; do not infer unimplemented functionality |
+| **D** | Dependency behavior: pinned package defaults, not implemented by this app | Preserve the primitive contract; verify the composed workflow in a browser |
+| **R** | Recommended completion rule for a consuming product | Implement when the task requires it; do not claim upstream already does it |
+| **V** | Unverified runtime behavior or an identified source limitation | Keep visible in acceptance criteria; do not claim a passing UI test |
+
+Unless marked otherwise, component classes, dimensions, and handlers below are **S**. Source limitations are not instructions to reproduce bugs. Read in this order: this scope and the baseline, tokens and shell, the relevant component/page section, states and known gaps, then acceptance. When modifying an existing product, inspect its installed source and preserve its data and permission contracts.
+
+Evidence precedence: pinned page composition and local overrides > pinned shared component > local theme/base CSS > lockfile-resolved dependency defaults. `cn()` uses `clsx` and `tailwind-merge`; caller classes can override defaults. CSS cascade, variant specificity, and the mobile `!important` input rule also matter. Do not replace this hierarchy with current registry examples.
+
+<a id="baseline"></a>
+## Pinned Technology Baseline
+
+Exact resolutions come from [pnpm-lock.yaml][lock], not only the ranges in [package.json][package]. [components.json][config] sets `new-york`, `slate`, CSS variables, `rsc: false`, and `@/` aliases. This is a Vite React application, not Next.js.
+
+| Package | Resolved version |
+| --- | --- |
+| `react`, `react-dom` | `19.2.0` |
+| `vite` / `typescript` | `7.1.11` / `5.9.3` |
+| `tailwindcss`, `@tailwindcss/vite` | `4.1.14` |
+| `tw-animate-css` | `1.4.0` |
+| `@tanstack/react-router` / `@tanstack/react-query` / `@tanstack/react-table` | `1.132.47` / `5.90.2` / `8.21.3` |
+| `react-hook-form` / `@hookform/resolvers` / `zod` | `7.64.0` / `5.2.2` / `4.1.12` |
+| `cmdk` / `input-otp` | `1.1.1` / `1.4.2` |
+| `react-day-picker` / `date-fns` | `9.11.1` / `4.1.0` |
+| `recharts` / `sonner` / `react-top-loading-bar` | `3.2.1` / `2.0.7` / `3.0.2` |
+| `lucide-react` / `@radix-ui/react-icons` | `0.545.0` / `1.3.2` |
+| `@clerk/clerk-react` / `zustand` / `axios` | `5.51.0` / `5.0.8` / `1.12.2` |
+| `class-variance-authority` / `clsx` / `tailwind-merge` | `0.7.1` / `2.1.1` / `3.3.1` |
+
+Radix package suffixes below mean `@radix-ui/react-*`; there is no single shared Radix version.
+
+| Package suffix | Resolved version |
+| --- | --- |
+| `alert-dialog`, `dialog`, `popover` | `1.1.15` |
+| `avatar` / `checkbox` / `collapsible` | `1.1.10` / `1.3.3` / `1.1.12` |
+| `direction` / `dropdown-menu` / `label` | `1.1.1` / `2.1.16` / `2.1.7` |
+| `radio-group` / `scroll-area` / `select` | `1.3.8` / `1.2.10` / `2.2.6` |
+| `separator` / `slot` / `switch` | `1.1.7` / `1.2.3` / `1.2.6` |
+| `tabs` / `tooltip` | `1.1.13` / `1.2.8` |
+
+**R:** Reuse installed local components. Do not run the latest shadcn CLI with overwrite, introduce newer `Field`/`Empty`/`Spinner`/chat primitives as if installed, or upgrade dependencies as part of applying this document. `FormField`/`FormItem`/`FormControl` is this snapshot's form composition.
+
+<a id="principles"></a>
 ## Design Principles
 
-1. **Operational clarity.** Optimize for scanning, comparison, and repeated action. Headings orient the user; they do not dominate the viewport.
-2. **Semantic theming.** Use named tokens such as `background`, `foreground`, `primary`, `muted`, `accent`, and `destructive`. Do not replace them with arbitrary palette utilities.
-3. **Quiet structure.** Build hierarchy with spacing, thin borders, restrained shadows, and type weight. Avoid decorative containers and visual noise.
-4. **Component composition.** Reuse the project's installed shadcn/Radix components and their variants. Compose pages from known primitives before creating custom surfaces.
-5. **Complete states.** Every workflow accounts for hover, focus, active, selected, expanded, disabled, loading, empty, invalid, and destructive states where applicable.
-6. **Responsive and bidirectional by design.** Mobile navigation, RTL direction, logical spacing, keyboard access, and text overflow are part of the component contract.
+- Use compact, scan-friendly work surfaces, concise titles, semantic tokens, thin borders, and restrained elevation.
+- Compose existing primitives and their variants; preserve local RTL adaptations and page-specific density.
+- Use cards for repeated metrics, objects, or genuinely bounded tools, not every section or nested decoration.
+- **R:** New flows need meaningful disabled, validation, pending, empty, failure, and recovery states. The demo does not implement all of them.
+- Avoid marketing-scale headlines, decorative gradients, arbitrary brand colors, and layout shifts. Functional source exceptions are explicitly recorded below, not generalized to every page.
 
-## Technology Baseline
-
-The visual contract is pinned to the v2.2.1 source snapshot:
-
-| Area | Source baseline |
-| --- | --- |
-| Application | Vite 7, React 19, TypeScript 5.9 |
-| Styling | Tailwind CSS 4, CSS variables, `new-york` component style |
-| Primitives | Radix UI with local shadcn component source |
-| Navigation and data | TanStack Router, Query, and Table |
-| Forms | React Hook Form, Zod, Radix controls |
-| Icons | Lucide; Tabler is limited to brand icons in upstream documentation |
-| Charts | Recharts with five semantic chart tokens |
-| Feedback | Sonner, alerts, skeletons, navigation progress |
-
-Do not use this table as permission to upgrade dependencies. Version upgrades require their own source review and a new design-document version.
-
+<a id="colors"></a>
 ## Color System
 
-### Core Semantic Tokens
+[theme.css][theme] defines 23 direct color roles per mode and eight sidebar aliases. `@theme inline` maps them to semantic utilities. The front matter is a compact summary; these tables are the full color contract. There is no separate `destructive-foreground` or success/warning token.
 
-Use the CSS custom properties from `src/styles/theme.css`. Components consume them through semantic utilities such as `bg-background`, `text-foreground`, `border-border`, and `ring-ring`.
+### Core Semantic Tokens
 
 | Role | Light | Dark | Intended use |
 | --- | --- | --- | --- |
@@ -98,312 +127,551 @@ Use the CSS custom properties from `src/styles/theme.css`. Components consume th
 | `chart-4` | `oklch(0.828 0.189 84.429)` | `oklch(0.627 0.265 303.9)` |
 | `chart-5` | `oklch(0.769 0.188 70.08)` | `oklch(0.645 0.246 16.439)` |
 
-The sidebar tokens alias the core roles: `sidebar` to `background`, `sidebar-foreground` to `foreground`, `sidebar-primary` to `primary`, `sidebar-accent` to `accent`, plus their foreground, border, and ring counterparts. Keep these aliases so alternate sidebar treatments remain theme-aware.
+### Sidebar Aliases
 
-Use chart colors in stable series order and include labels, legends, or direct values; color alone must not carry meaning. Destructive red is not a general accent. Do not introduce a second brand hue merely to make a page feel more colorful.
+These aliases are declared in `:root`; they resolve against the active light/dark core variables.
 
+| Alias | Value in both modes |
+| --- | --- |
+| `sidebar` | `var(--background)` |
+| `sidebar-foreground` | `var(--foreground)` |
+| `sidebar-primary` | `var(--primary)` |
+| `sidebar-primary-foreground` | `var(--primary-foreground)` |
+| `sidebar-accent` | `var(--accent)` |
+| `sidebar-accent-foreground` | `var(--accent-foreground)` |
+| `sidebar-border` | `var(--border)` |
+| `sidebar-ring` | `var(--ring)` |
+
+### Source Exceptions and Extension Rules
+
+- The dashboard uses `primary` and `muted-foreground`, with `#888888` axes, not `chart-1..5`. Those five variables exist but are not consumed by the two dashboard charts.
+- [Users status styles][user-data] are `active`: teal, `inactive`: neutral, `invited`: sky, `suspended`: destructive. Exact existing classes: `bg-teal-100/30 text-teal-900 dark:text-teal-200 border-teal-200`; `bg-neutral-300/40 border-neutral-300`; `bg-sky-200/40 text-sky-900 dark:text-sky-100 border-sky-300`; `bg-destructive/10 dark:bg-destructive/50 text-destructive dark:text-primary border-destructive/10`.
+- Apps' connected buttons use blue light/dark utilities; descriptions use `text-gray-500`. Theme previews and brand artwork also contain raw colors. Tooltip uses `primary`/`primary-foreground`, not popover colors. Destructive Button/Badge use white text, including dark `bg-destructive/60`.
+- **R:** Prefer semantic roles for new work. Preserve or deliberately review the exceptions above; do not claim the source is entirely tokenized. New multiseries charts may use `chart-1..5` in a stable mapping, with labels or values beyond color. Verify contrast before extending status palettes.
+
+<a id="typography"></a>
 ## Typography
 
-The appearance settings expose `Inter`, `Manrope`, and the system stack. Inter is the default operational choice; Manrope is an available alternate, not a display-font license for oversized headings.
+[FontProvider][font-provider] defaults to `inter` and adds `font-inter`, `font-manrope`, or `font-system` to `html`. [index.html][html] loads Inter and Manrope through Google Fonts with `display=swap`. Theme declarations are exactly `'Inter', 'sans-serif'` and `'Manrope', 'sans-serif'`.
 
-| Role | Size and weight | Usage |
+**D/V:** There is no local `--font-system` declaration. Selecting system removes the named font utility and relies on Tailwind/browser fallback; it does not load another font. Tailwind 4.1.14's default sans stack begins `ui-sans-serif, system-ui, sans-serif` and includes platform emoji fonts. Offline font substitution and non-Latin glyph coverage require runtime checks.
+
+| Role / utility | Size / line height | Source use |
 | --- | --- | --- |
-| Page title | approximately 24-30px, bold/semibold | One concise title per page |
-| Section title | 18-20px, semibold | Major unframed sections or card titles |
-| Card title | 16px, semibold | Compact surface heading |
-| Body/control | 14px, regular or medium | Tables, buttons, navigation, forms |
-| Supporting text | 14px, muted | Descriptions and secondary values |
-| Caption/label | 12px, medium | Group labels, badges, metadata |
-| Mobile form text | 16px minimum below 768px | Prevent browser focus zoom |
+| `text-xs` | 12px / 16px | Badges, metadata, group labels |
+| `text-sm` | 14px / 20px | Most controls, table cells, navigation |
+| Inherited body / `text-base` | 16px / 24px | Unqualified body text and descriptions |
+| `text-lg` | 18px / 28px | Dialog title size; title overrides may use `leading-none` |
+| `text-xl` | 20px / 28px | Section/auth titles |
+| `text-2xl` | 24px / 32px | Page headings and metric values |
+| `text-3xl` | 30px / 36px | Larger page headings, often at `md` |
+| Error status | `7rem` (112px), `leading-tight` | 401/403/404/500/503, not normal page titles |
 
-Use `font-medium` or `font-semibold` to create hierarchy before increasing size. Preserve normal letter spacing; only command shortcuts may use wider tracking. Use tabular numerals for counters and aligned metrics. Truncate long single-line navigation labels and provide access to the full value when it matters.
+Sizes and default line heights are **D**, from [Tailwind 4.1.14 theme.css][tw-theme]; role assignments are **S**. CardTitle inherits size and uses semibold/`leading-none`; dashboard cards override it to compact `text-sm font-medium`. Labels are generally 14px medium, not uniformly 12px. Source page headings often use `tracking-tight`; tabular numerals are not an application-wide rule.
 
-## Spacing, Shape, and Elevation
+[index.css][base-css] forces **native** `input, select, textarea` to 16px with `!important` through 767px. Radix SelectTrigger is a button and remains `text-sm` unless overridden. OTP slot text is also not a native input. **R:** Preserve source heading classes for faithful reproduction; normal tracking and tabular figures in newly designed data columns are deliberate choices, not inherited global facts.
 
-Tailwind's 4px spacing rhythm is the base. Common page spacing is `1rem` horizontal and `1.5rem` vertical. Compact component interiors commonly use 8-12px gaps; major content groups use 16-24px. Prefer `gap-*` in flex and grid layouts so direction and wrapping remain predictable.
+<a id="geometry"></a>
+## Spacing, Shape, Elevation, and Motion
 
-The root radius is `0.625rem` (10px):
+**D:** Tailwind spacing unit is `0.25rem` (4px with a 16px root). Common source gaps are 4/8/12/16/24/32px. [Main][main] uses horizontal 16px and vertical 24px padding. Settings forms use 32px field-group spacing; this is not interchangeable with compact table toolbars.
 
-| Token | Computed radius | Typical use |
+| Radius | Value | Existing examples |
 | --- | --- | --- |
-| `radius-sm` | 6px | Small command items and tight inner controls |
-| `radius-md` | 8px | Buttons, inputs, navigation rows, badges |
-| `radius-lg` | 10px | Dialogs, alerts, grouped controls |
-| `radius-xl` | 14px | Cards |
+| Root `--radius` | `0.625rem` / 10px | Theme foundation |
+| `radius-sm` | root - 4px = 6px | Menu items |
+| `radius-md` | root - 2px = 8px | Buttons, inputs, navigation, Badge |
+| `radius-lg` | root = 10px | Dialog, Alert, TabsList, app integration item |
+| `radius-xl` | root + 4px = 14px | Card, inset shell, bulk toolbar |
+| Local exceptions | 4px, full, 16px corners | Checkbox, Switch/Avatar, chat bubbles |
 
-Use thin `border-border` outlines and the component's existing `shadow-xs`, `shadow-sm`, or `shadow-lg`. Cards use a small shadow; dropdowns and dialogs can use stronger elevation because they are layered. Do not make normal page sections float. Do not combine a strong border, large shadow, tinted fill, and large radius on the same surface.
+Borders are generally 1px; focus is not a substitute for the border. Common input/button focus is a 3px `ring-ring/50` with ring-colored border. PasswordInput and sidebar/menu/close controls have their own focus classes, so do not normalize every focus style by assertion.
 
-Normal focus uses a 3px `ring/50` halo plus the ring-colored border. Common state transitions are 200ms. Collapsible content uses 300ms ease-out; sheets use 300ms on close and 500ms on open. A fixed header adds a shadow and subtle background blur only after scrolling. Honor reduced-motion preferences by removing nonessential animation while preserving final states.
+**D:** Exact default shadows from the pinned Tailwind theme:
 
-## Admin Shell and Layout
-
-### Shell Dimensions
-
-- Desktop sidebar: `16rem` (256px).
-- Collapsed icon sidebar: `3rem` (48px).
-- Mobile sheet sidebar: `18rem` (288px).
-- Header: `4rem` (64px).
-- Main content: `1rem` horizontal and `1.5rem` vertical padding.
-- Non-fluid content: centered at the `@7xl/content` container threshold with `max-w-7xl` (80rem / 1280px).
-- Full application height: `100svh` for fixed layouts; inset layouts subtract their surrounding spacing.
-
-The default layout is an `inset` sidebar with `icon` collapse. Supported sidebar variants are `inset`, `sidebar`, and `floating`; supported collapse modes are `icon`, `offcanvas`, and `none`. Keep layout and collapse choices coherent rather than mixing visual fragments from different variants.
-
-The header contains the sidebar trigger, separator, contextual navigation or search, theme/configuration actions, and user menu. The main area owns page title, primary action, view controls, and content. Avoid wrapping the entire main area in a decorative card.
-
-Sidebar state, layout variant, collapse mode, theme, font, and direction are persistent user preferences in the source application. Do not reset them on route changes. Fixed layouts must contain their own scrolling regions and must not create a second page scrollbar.
-
-## Component Language
-
-### Buttons and Actions
-
-Buttons are 14px medium text with icon/text gaps and a visible focus ring.
-
-| Size | Dimensions |
+| Utility | Shadow |
 | --- | --- |
-| Default | 36px high, 16px horizontal padding |
-| Small | 32px high, 12px horizontal padding |
-| Large | 40px high, 24px horizontal padding |
-| Icon | 36px square |
+| `shadow-xs` | `0 1px 2px 0 rgb(0 0 0 / 0.05)` |
+| `shadow-sm` | `0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)` |
+| `shadow-lg` | `0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)` |
 
-Use `default` for the principal action, `secondary` for an alternate, `outline` for neutral tools, `ghost` for low-chrome controls, `link` for inline navigation, and `destructive` only for irreversible or dangerous commands. A page normally has one strongest action. Disabled controls use 50% opacity and no pointer events. Loading buttons stay disabled and retain their label or accessible name while showing progress.
+Card uses `shadow-sm`; input/button often `shadow-xs`; Dialog/Sheet `shadow-lg`; Popover/Select/dropdown `shadow-md`. Bulk toolbar uses `shadow-xl`, and selected configuration previews use `shadow-2xl`. Those stronger shadows are local exceptions.
 
-Use familiar Lucide symbols for icon actions. Let the local Button component control normal icon size. Supply accessible names and tooltips for icon-only controls whose meaning is not obvious.
-
-### Forms and Selection Controls
-
-Inputs are 36px high with 12px horizontal padding, an 8px radius, a thin input border, and a small shadow. Textareas use the same surface language with a 64px minimum height. At widths below 768px, input, select, and textarea text is forced to 16px to avoid browser focus zoom.
-
-Labels are concise and visible. Descriptions use `muted-foreground`. Validation uses `aria-invalid`, a destructive border, and a 3px destructive-tinted ring; errors sit next to the field they describe. Disabled controls remain legible but visibly unavailable. Preserve the source React Hook Form and Zod composition rather than inventing a parallel form system.
-
-Checkboxes, radio groups, switches, selects, calendars, OTP fields, and password inputs use the installed Radix/shadcn components. Keep checked, unchecked, open, selected, invalid, and disabled states. Group related controls under a clear label, and never use placeholder text as the only label.
-
-### Cards, Metrics, and Charts
-
-Cards use `card`/`card-foreground`, a border, 14px radius, 24px vertical padding, 24px internal group gap, and `shadow-sm`. Use full composition: header for title/description/action, content for the main value or visualization, and footer for supporting actions when needed.
-
-Metric cards place the label and optional icon first, the value as the strongest element, and trend/context beneath it. Charts share the card surface and semantic chart palette. Axes, tooltips, legends, empty states, and loading states must remain readable in both themes.
-
-Use cards for distinct repeatable objects or bounded tools. Do not place cards inside cards or convert every page section into a floating tile. A border, separator, or unframed content group is usually sufficient for secondary hierarchy.
-
-### Data Tables and Pagination
-
-Tables use a full-width semantic surface. Headers are 40px high with 8px horizontal padding, medium weight, and no wrapping. Cells use 8px padding and aligned, non-wrapping operational content. Rows have a bottom border, an accent hover state, and a distinct selected state.
-
-Keep filters, search, column visibility, primary actions, and bulk actions close to the table. Sorting and filtering controls must expose state, not only icon color. Pagination includes page numbers, page size, current range, and previous/next controls as supported by the source. Bulk actions appear only when rows are selected and destructive bulk actions require confirmation.
-
-TanStack Table state may synchronize with URL search parameters. Preserve that behavior so refresh, history, and shared links remain useful. On narrow screens, prioritize columns, offer row detail or a contained table viewport, and prevent the whole page from scrolling horizontally.
-
-### Navigation and Sidebar
-
-Sidebar groups use 12px medium labels with muted foreground. Standard menu buttons are 32px high, 14px text, 8px padding, 8px radius, and a 16px icon. Hover, active, open, and selected states use sidebar accent roles. Submenus use a logical-side border and indentation, not a new card.
-
-The expanded sidebar shows labels, groups, badges, and user information. The icon variant collapses to 48px and uses tooltips for hidden labels. Mobile navigation is a Sheet, not a compressed desktop rail. The sidebar toggles with `Ctrl/Cmd+B`; do not intercept the shortcut inside text-editing workflows without preserving expected input behavior.
-
-Top navigation remains compact and can collapse to a mobile dropdown. Long titles and user values truncate without moving adjacent controls. Use logical `start`/`end`, `ms`/`me`, and border-inline utilities so layout works in RTL.
-
-### Tabs, Badges, and Avatars
-
-Tabs use a 36px muted list surface with 3px inner padding. Active triggers use the background surface and a small shadow; inactive text is muted. Keep triggers inside one TabsList and disable unavailable views explicitly.
-
-Badges are compact 12px labels with an 8px radius, thin border where applicable, and default, secondary, destructive, or outline variants. Use badges for status or count, not as general-purpose buttons. Avatars always include a fallback initial or short name and preserve a stable size.
-
-### Dialogs, Sheets, Menus, and Popovers
-
-Dialog overlays use 50% black. Dialog content is centered, bordered, padded 24px, rounded 10px, and shadowed; the default maximum width is `sm:max-w-lg` with 1rem viewport margins. Headers contain a title and optional description. Footers stack in reverse order on mobile and align actions to the end on larger screens.
-
-Sheets slide from the requested edge, use 75% width for side panels, and cap at `sm:max-w-sm`. Mobile sidebars and configuration panels use this pattern. Dropdowns, selects, tooltips, and popovers use the popover tokens, restrained elevation, collision-aware placement, and keyboard navigation supplied by Radix.
-
-Every Dialog and Sheet needs an accessible title, even when visually hidden. Destructive confirmations state the affected object and consequence. Do not use a modal for content that can remain in normal page flow.
-
-### Command Search
-
-The global command palette is a Dialog containing the installed `cmdk` primitives. Its search area is 48px high in the dialog composition; the result list has a 300px maximum height. Groups use 12px muted headings; items use 14px text, compact padding, semantic selected state, icons, and optional shortcuts.
-
-Support `Ctrl/Cmd+K` to open, arrow keys to move, Enter to activate, and Escape to close. Display an explicit no-results state. Search results mirror navigable application destinations and preserve active/nested context.
-
-### Feedback, Loading, Empty, and Error States
-
-Use Sonner for transient notifications, Alert for in-flow messages, Skeleton for structural loading, and the navigation progress bar for route changes. Alerts carry `role="alert"`; routine nonurgent status updates should use polite live-region behavior when custom feedback is needed.
-
-Loading states reserve final layout dimensions. Empty states state what is missing and offer the most relevant next action. Error states distinguish recoverable validation, authorization, not-found, and server failures. Destructive feedback uses the destructive role; success must not invent a permanent green brand system outside a purposeful status treatment.
-
-Authentication and settings screens use the same controls, tokens, and spacing as the main application. Chat keeps the conversation region readable, the composer stable, and mobile borders/radii responsive. Do not make utility pages look like unrelated marketing pages.
-
-## Complete Source Coverage Matrix
-
-The following inventory is normative for this version. An implementation may use only the components needed by its workflow, but it must not substitute a different visual language when one of these source patterns applies.
-
-### Installed UI Primitives
-
-| Source components | Required visual and state coverage |
+| Motion or layer | Source/default behavior |
 | --- | --- |
-| `alert`, `alert-dialog` | In-flow status and destructive confirmation; title, description, default/destructive roles, open/closed, focus trap, cancel/confirm, disabled and pending actions |
-| `avatar`, `badge` | Stable identity fallback and compact status/count; image failure, fallback, default/secondary/destructive/outline and interactive focus where linked |
-| `button` | Default, destructive, outline, secondary, ghost and link variants; default/small/large/icon sizes; hover, focus, active, disabled and loading |
-| `calendar`, `date-picker` | Month navigation, today, selected, range, outside, unavailable and disabled dates; popover open/closed, keyboard focus and formatted value |
-| `card` | Header, title, description, action, content and footer composition; default, loading, empty and error content without nested cards |
-| `checkbox`, `radio-group`, `switch` | Checked/unchecked/indeterminate where supported, hover, focus, disabled, invalid, label association and RTL alignment |
-| `collapsible` | Trigger, open/closed state, rotating direction-aware indicator, 300ms content transition and reduced-motion result |
-| `command` | Dialog, input, list, empty, group, item, separator and shortcut; query, selected, disabled, keyboard navigation and no results |
-| `dialog`, `sheet` | Overlay, content, header, title, description, footer and close; open/closed, focus management, responsive actions and pending submission |
-| `dropdown-menu`, `popover`, `select`, `tooltip` | Trigger/content composition, open/closed, highlighted, selected, checked, disabled, nested/submenu where provided, collision handling and keyboard control |
-| `form`, `label`, `input`, `textarea`, `input-otp` | Default, hover, focus, filled, invalid, disabled, read-only and submitting; descriptions, messages, OTP caret/completion and mobile 16px text |
-| `scroll-area`, `separator` | Direction-aware viewport/scrollbar and semantic visual division; overflow, hidden/visible scrollbar, horizontal/vertical orientation and RTL |
-| `sidebar` | Provider, rail, inset, header, footer, content, group, menu, badge, action, submenu and skeleton; expanded/collapsed/offcanvas/mobile, active, hover, focus, open and loading |
-| `skeleton`, `sonner` | Shape-preserving loading placeholders and transient notification variants; visible/dismissed, success/error/info where used, action and duration semantics |
-| `table` | Header, body, footer, row, head, cell and caption; hover, selected, sorted context, empty, loading, overflow and RTL alignment |
-| `tabs` | Root, list, trigger and content; active/inactive, hover, focus, disabled and responsive overflow |
+| Unqualified transition | **D:** 150ms, not universally 200ms |
+| Sidebar width/position, nav chevron, Dialog content | Explicit 200ms |
+| `.CollapsibleContent` | 300ms ease-out height keyframes |
+| Sheet | Close 300ms, open 500ms; direction-aware sliding |
+| Menus/Popover/Tooltip | Fade/zoom/side entry from `tw-animate-css`; keep the installed classes |
+| Sidebar / table sticky cells | `z-10` |
+| Header, modal surfaces, bulk toolbar, mobile chat | `z-50`; equal values still depend on stacking context |
+| Skip link | `z-999` |
+| Header and bulk toolbar | Scrolled fixed header blur; bulk backdrop blur and hover scale 1.05 |
+| Functional fading | `faded-bottom` adds a 128px gradient overlay at `md`, with pointer events disabled |
 
-### Shared, Layout, and Data Components
+**V/R:** No explicit app-wide reduced-motion media rule was found. Respecting reduced motion, testing overlay stacking and background scroll locking, and preventing dynamic-content shifts are acceptance requirements for new product work, not certified source behavior.
 
-| Source area | Components and expectations |
+<a id="shell"></a>
+## Admin Shell and Navigation
+
+Source: [authenticated-layout][shell], [Sidebar][sidebar], [Header][header], [Main][main], [nav-group][nav], and [sidebar-data][nav-data].
+
+| Surface | Source contract |
 | --- | --- |
-| Application shell | `app-sidebar`, `app-title`, `authenticated-layout`, `header`, `main`, `nav-group`, `nav-user`, `team-switcher`, `top-nav`; cover all three sidebar variants, all collapse modes, persistent state, mobile Sheet, active route, nested route, account menu and long labels |
-| Data table system | `bulk-actions`, `column-header`, `faceted-filter`, `pagination`, `toolbar`, `view-options`; cover search, reset, sort direction, filter selection, column visibility, row selection, page size, page numbers, previous/next, loading, empty and destructive bulk confirmation |
-| Global utilities | `command-menu`, `config-drawer`, `confirm-dialog`, `date-picker`, `navigation-progress`, `search`, `select-dropdown`, `sign-out-dialog`, `theme-switch`; cover trigger/open/close, keyboard access, theme/direction/layout preview, pending navigation and destructive sign-out |
-| Content utilities | `coming-soon`, `learn-more`, `long-text`, `password-input`, `profile-dropdown`, `skip-to-main`; cover unavailable feature messaging, external/help action, truncation, password reveal, avatar fallback, account actions and keyboard bypass navigation |
+| Expanded desktop sidebar | `--sidebar-width: 16rem` / 256px |
+| Icon token | `--sidebar-width-icon: 3rem` / 48px |
+| Plain sidebar collapsed | 48px allocation |
+| Inset/floating collapsed | Gap = 48 + 16 = 64px; fixed outer container = 48 + 16 + 2 = 66px, including `p-2` treatment |
+| Mobile sidebar | 18rem / 288px Sheet for collapsible modes |
+| Header | 4rem / 64px; inner `p-4`, gap 12px then 16px at `sm` |
+| Main | `px-4 py-6`; non-fluid width capped at 80rem / 1280px only at `@7xl/content` |
+| Fixed Main | `flex grow flex-col overflow-hidden`; descendants own scrolling |
+| Fixed shell | `100svh`; inset formula subtracts `var(--spacing) * 4` (16px) |
+| Inset desktop frame | 8px margins, 14px radius, small shadow |
 
-### Feature and Page Families
+The app's LayoutProvider defaults to `inset` + `icon`; the primitive Sidebar alone defaults to `sidebar` + `offcanvas`. Variants: `inset/sidebar/floating`; collapsibility: `offcanvas/icon/none`. **Important:** `none` returns a static 16rem sidebar before the mobile branch; it does not become a mobile Sheet. It is supported by the component but is not offered in ConfigDrawer.
 
-| Feature/page family | Required coverage |
+Only `<Header fixed>` is sticky. Its shadow and translucent blur appear when document scroll exceeds 10px; normal Header is not fixed. Apps, Chats and Settings use `<Main fixed>` with internal scrolling. Tasks and Users use `<Header fixed>` with a normal Main; Dashboard uses normal Header/Main. Do not conflate a sticky header with fixed-height content.
+
+Sidebar menu rows default to 32px height, 14px text, 8px padding/radius, 16px icons; small/large variants are 28/48px. Group labels are 12px. `data-active` applies sidebar accent plus medium weight. Expanded nested menus use Collapsible and an indented logical-side border; collapsed desktop groups become dropdowns. Leaf clicks close the mobile Sheet. Open groups use `defaultOpen`, not a guaranteed route-synchronized expansion effect.
+
+Groups are General, Pages, and Other. Chats badge `3` is static demo data. TeamSwitcher changes local displayed team, not tenancy or permissions. NavUser/ProfileDropdown provide menu compositions and SignOutDialog; displayed profile data is demo data. TopNav has a small-screen dropdown and desktop links, not a breadcrumb trail or persistent route-tab system.
+
+**S/V:** Ctrl/Cmd+B toggles the sidebar; Ctrl/Cmd+K toggles global search. Both handlers are global and lack an input/contenteditable guard. **R:** Preserve names, focus, and logical directions, but review shortcut conflicts when adding editors. Do not invent breadcrumbs, mixed-navigation layout, or arbitrary-depth trees as existing features.
+
+<a id="components"></a>
+## Installed Component Contracts
+
+The [UI directory][ui] contains exactly 30 files. Page overrides take precedence. This inventory documents actual primitives; loading/empty/error behavior must come from the relevant caller, not from a component name alone.
+
+### Buttons and Badges
+
+[button.tsx][button] exposes `default/destructive/outline/secondary/ghost/link`, `asChild`, and four sizes.
+
+| Size | Height | Horizontal padding | With direct SVG child |
+| --- | --- | --- | --- |
+| `default` | 36px | 16px | 12px |
+| `sm` | 32px | 12px | 10px |
+| `lg` | 40px | 24px | 16px |
+| `icon` | 36px square | Component layout | 16px default icon |
+
+Default hover uses `primary/90`; secondary `secondary/80`; outline accent (dark input/50); ghost accent (dark accent/50); link underline. Disabled removes pointer events and halves opacity. There is no built-in `loading`/`isLoading` prop or universal active-scale rule. **R:** Compose a progress icon and `disabled` for real async actions without changing dimensions.
+
+`badge.tsx` has default/secondary/destructive/outline variants, 12px medium text, 8px horizontal and 2px vertical padding, 8px radius, and 12px icons. Link hover is conditional on rendering as an anchor. Navigation count badges override to full rounding. A Badge is not a generic mode button.
+
+### Forms, Inputs, and Selection
+
+[form.tsx][form] composes RHF FormProvider, Controller-backed FormField, FormItem, FormLabel, FormControl, FormDescription, and FormMessage. FormControl wires `id`, `aria-describedby`, and `aria-invalid`; FormMessage renders the validation message. **V:** A caller bypassing FormControl does not automatically receive those associations.
+
+| Source component | Geometry and state contract |
 | --- | --- |
-| Dashboard | Overview and analytics tabs, metric cards, chart cards, recent sales, download action, chart tooltip/legend, disabled tabs, loading and no-data states |
-| Tasks | Search, status/priority filters, sortable and hideable columns, selection, pagination, import/create/edit/delete dialogs, row and bulk actions, validation, submitting and empty results |
-| Users | Search and filters, table selection, invite/create/edit/delete flows, row and bulk actions, status/role badges, validation, pending requests and empty results |
-| Apps | Search/filter result grid, integration cards, connected/not-connected state, empty results, long descriptions and responsive card layout |
-| Chats | Conversation list, search, selected conversation, unread/count state, message history, composer, new-chat dialog, scrolling, empty conversation and mobile split-view behavior |
-| Authentication | Sign in, alternate sign-in layout, sign up, forgot password and OTP; default, focus, invalid credentials, validation, password reveal, submitting, success and recovery paths |
-| Clerk integration | Clerk sign-in, sign-up, authenticated boundary and user management remain visually integrated without restyling third-party behavior beyond supported theming hooks |
-| Settings | Profile, account, appearance, notifications and display forms; dirty/pristine, validation, saving, saved feedback, theme, font, direction and display preferences |
-| Error handling | Authenticated error route plus 401, 403, 404, 500 and 503 pages; clear status, concise explanation, safe primary recovery action and optional secondary navigation |
-| Help and unavailable routes | Help center and coming-soon surfaces use the normal shell, clear next steps and no marketing-style hero composition |
+| `input.tsx` | 36px high, `min-w-0`, 12px horizontal padding, 8px radius, transparent / dark input/30, placeholder muted; focus ring 3px; invalid destructive border and ring/20 or dark /40; disabled 50% |
+| `textarea.tsx` | Minimum 64px, `field-sizing-content`, 12px/8px padding; same focus, invalid, dark and disabled treatment |
+| `label.tsx` | 14px medium, peer/group disabled styling; preserve association, not placeholder-only labels |
+| `checkbox.tsx` | 16px square, explicit 4px radius, primary checked state, Check icon, invalid/focus/disabled styles; Radix supports indeterminate, but this wrapper does not supply a separate dash icon |
+| `radio-group.tsx` | Group grid gap 12px; 16px round item and 8px primary dot, focus/invalid/disabled styles |
+| `switch.tsx` | 32px by 1.15rem (18.4px), 16px thumb; primary checked/input unchecked, mirrored RTL thumb, focus/disabled styles; no dedicated local invalid style |
+| `select.tsx` | Button trigger 36px or 32px, `w-fit`, 14px text; popper menu minimum 128px, available-height cap; selected check, focus accent, disabled 50%, invalid trigger |
+| `input-otp.tsx` | 36px slots, active 3px ring, caret animation, grouped edge radii; actual OTP page uses six positions grouped 2+2+2 |
+| Shared `password-input.tsx` | Native input 36px, 1px focus ring; 24px reveal button at logical end. No local destructive invalid classes or accessible reveal label |
+| Shared `select-dropdown.tsx` | Items/value/open composition; optional disabled `loading` item is 56px high with a 20px spinning Loader; this does not fetch data |
 
-Every page family must include its relevant responsive, dark, RTL, loading, empty, error, disabled, and keyboard states even when the upstream demo uses mock data and does not visibly exercise every state.
+**D:** Radix handles checkbox/radio/select state and keyboard interaction; RHF/Zod handles the passed schema. **R:** Keep visible labels, field-linked errors, explicit submit buttons, and repeat-submit guards. Do not claim every demo form blocks duplicate requests, warns on dirty navigation, or has server validation. Password reveal naming and wrapper label/invalid wiring require review.
 
+### Calendar and DatePicker
+
+[calendar.tsx][calendar] wraps DayPicker 9.11.1: 12px padding, 32px cell token, months stacked then horizontal at `md`, outside days shown by default. It styles today, single selection, range endpoints/middle, outside, disabled, hidden, and focused days; day focus is forwarded to the button. Range styling support does not mean every DatePicker is a range picker.
+
+[date-picker.tsx][date-picker] is a shared single-date Popover with a 240px outline Button, `MMM d, yyyy` formatting, dropdown caption, and dates disabled after today or before `1900-01-01`. Empty displays a muted placeholder. There is no free-text parser, clear action, time picker, upload, or automatic close-on-select handler here. **D/V:** Calendar keyboard/date semantics come from the pinned DayPicker; localization, RTL range corner shapes, and zoom need runtime verification.
+
+### Cards, Avatars, and Tabs
+
+`card.tsx` uses card roles, border, 14px radius, `py-6`, group gap 24px, and `shadow-sm`. Header/Content/Footer use horizontal 24px padding; CardAction occupies the header action column. Card itself does not implement loading, empty, or failure states.
+
+`avatar.tsx` defaults to 32px square with full rounding, image and muted fallback. Callers override size (for example 36/44px in chat). Retain fallback when images fail; a remote URL is not an availability guarantee.
+
+`tabs.tsx`: root gap 8px; list 36px, muted surface, 10px radius, 3px padding. Triggers are 14px medium and nowrap, with 8px radius. Active is background + small shadow, but dark active uses input/30 and input border. Inactive text is foreground in light and muted in dark. Disabled blocks pointer events with 50% opacity. **D:** Radix supplies activation/keyboard behavior; callers must handle narrow overflow.
+
+### Dialog, AlertDialog, Sheet, and Overlays
+
+| Component | Surface and composition |
+| --- | --- |
+| `dialog.tsx` | Black/50 overlay; centered background, 24px padding, 16px gap, 10px radius, `shadow-lg`, viewport width minus 32px, `sm:max-w-lg` (512px). Footer is mobile reverse-column then end-aligned row. Optional built-in close button |
+| `alert-dialog.tsx` | Separate Radix confirmation primitive; similar centered surface with cancel/action composition, not an informational toast |
+| `sheet.tsx` | Background, border at entering edge, `shadow-lg`; left/right panels 75% width and `sm:max-w-sm` (384px); top/bottom auto height. Header/Footer padding 16px; footer at end |
+| `dropdown-menu.tsx` | Popover surface, compact padded items, selected/checkbox/radio/submenu/destructive/disabled styles and shortcuts |
+| `popover.tsx` | Default width 288px, 16px padding, 8px radius, border, `shadow-md`; callers frequently override to auto or 200px |
+| `tooltip.tsx` | Primary background and foreground, 12px text, 12px/6px padding, 8px radius, arrow; not the popover surface |
+
+[confirm-dialog.tsx][confirm] wraps AlertDialog. Its `isLoading` disables cancel and confirm; `disabled` can gate confirm separately. The confirm is a regular Button, not an automatic spinner or mutation. Callers own completion and closing.
+
+**D:** Pinned Radix primitives supply portal placement, modal focus handling, dismiss/focus-return behavior, and menu navigation. Dialog/Sheet and AlertDialog have different outside-interaction contracts; do not assume identical dismissal. **V:** Custom controlled opens, triggerless compositions, and the global `body[data-scroll-locked] { overflow: unset !important; }` can affect outcomes. Test actual focus return and background scrolling. Every modal needs a valid title and description association; do not infer compliance from importing DialogTitle.
+
+### Command Search and Layout Utilities
+
+[CommandMenu][command-menu] derives destinations from sidebar-data and adds light/dark/system commands. It closes before navigating or setting a theme. CommandDialog input area is 48px, list max-height 300px, and the actual palette nests a 288px ScrollArea. Group headings are 12px muted; items 14px, accent-selected, disabled 50%; the dialog overrides item vertical padding to 12px. Empty text is `No results found.` This is local navigation/theme search, not server search or a permission-filtered index.
+
+**D:** cmdk supplies query filtering, arrow navigation and Enter selection; Radix handles the enclosing modal. **V:** In [ui/command.tsx][command], the hidden DialogHeader/Title is outside DialogContent; verify accessible naming and modal hiding behavior rather than assuming it passes.
+
+`collapsible.tsx` exposes Radix Root/Trigger/Content; the 300ms app animation is opt-in via `.CollapsibleContent`. `scroll-area.tsx` adds an `orientation` prop (vertical by default), a matching 10px scrollbar, and `overflow-x-auto!` on the horizontal viewport; there is no `viewportClassName` prop. `separator.tsx` defaults to horizontal and `decorative: true`, with 1px thickness; callers supply vertical height. These are not cards.
+
+### Feedback, Loading, and Empty Content
+
+`alert.tsx` uses `role="alert"`, a bordered 10px-radius card surface, title/description/icon layout, and default/destructive variants. `skeleton.tsx` is `bg-accent animate-pulse rounded-md`; callers supply size. SidebarMenuSkeleton is available, not evidence that every page fetches asynchronously.
+
+[sonner.tsx][sonner] passes theme and overrides normal background/text/border with popover roles. [Root route][root-route] sets duration to 5000ms. Promise toasts appear in simulated auth/bulk flows. [NavigationProgress][progress] binds pending/complete router status to a 2px muted-foreground loading bar; it is not backend task progress.
+
+There is no shared `Empty`, `Spinner`, or generic `Progress` component. Tables render a 96px `No results.` cell; command lists have their own empty text; chat has an initial conversation placeholder; Apps has no dedicated zero-result message. **R:** New async views should keep dimensions stable, distinguish initial loading from refresh, provide relevant empty/reset/retry actions, and announce success/failure without inventing source behavior.
+
+### Shared Shell and Content Compositions
+
+Sources: the named files in [shared components][shared] and [layout components][layout-components].
+
+| Component | Actual composition and boundary |
+| --- | --- |
+| `app-sidebar.tsx`, `app-title.tsx` | AppSidebar mounts TeamSwitcher, NavGroup, NavUser and SidebarRail. AppTitle is an available home-link/toggle alternative, commented out in the default composition |
+| `search.tsx` | A 32px outline Button opening CommandMenu, not an inline search input; width grows from flexible to 160/208/256px at sm/lg/xl; shortcut badge appears at sm |
+| `top-nav.tsx` | Nonmodal dropdown below lg, inline links from lg; caller-provided active/disabled values, no route-tab history |
+| `nav-user.tsx`, `profile-dropdown.tsx` | Avatar/profile menu, settings destinations and SignOutDialog; Billing leads to Settings, Upgrade/New Team are placeholders, displayed shortcut labels do not register handlers |
+| `sign-out-dialog.tsx` | 384px confirmation; resets local auth and redirects to sign-in with the current location, not server-session revocation |
+| `theme-switch.tsx` | Nonmodal light/dark/system menu, selected check, animated sun/moon icons; updates theme-color to `#020817` only for explicit dark, otherwise `#fff` |
+| `learn-more.tsx` | 20px named icon trigger with a top/start Popover and 14px muted content, not a Dialog or necessarily an external link |
+| `coming-soon.tsx` | Full-height centered placeholder, 72px icon and 36px title; no working help action |
+| `long-text.tsx`, `skip-to-main.tsx` | Truncation disclosure and bypass intent; concrete keyboard/target gaps are documented below |
+
+<a id="tables"></a>
+## Data Tables, Filtering, and Bulk Actions
+
+Sources: [data-table components][data-table], [Tasks table][tasks-table], [Users table][users-table], [URL state hook][url-state].
+
+- `ui/table.tsx` wraps a semantic table in `overflow-x-auto`. Headers are 40px high with 8px horizontal padding; cells have 8px padding, 14px text and nowrap. Rows use `hover:bg-muted/50` and `data-[state=selected]:bg-muted`, **not accent**.
+- TableFooter has muted/50 fill, top border and medium weight; TableCaption is bottom-positioned, 14px muted with 16px top margin. These primitives exist even though Tasks/Users do not render them.
+- Toolbar search is 32px high, 150px wide then 250px at `lg`; filter controls and Reset stay near the data. Column View is hidden below `lg`, with a nonmodal checkbox dropdown for hideable accessor columns.
+- ColumnHeader offers ascending, descending and hiding where permitted. Faceted filters use Popover + Command, multi-selection, per-option counts, selected badges/counts and a clear action.
+- Header checkbox toggles **all rows on the current page**, not the entire dataset. Bulk operations read **filtered selected rows**. Sorting, visibility and selection stay local; do not imply they all serialize to URL.
+- Users pins the selection and username columns near logical start on narrow layouts; cell backgrounds preserve hover/selected state. Its `@4xl/content` shadow treatment is container-dependent. Do not replace this with a claim that columns automatically turn into cards.
+
+| Page | URL-backed state | Data boundary |
+| --- | --- | --- |
+| Tasks | `filter`, `status`, `priority`, `page`, `pageSize` | Client filtering of mock data; global filter targets task id/title |
+| Users | `username`, `status`, `role`, `page`, `pageSize` | Column filters; global filtering disabled |
+| Both | Default page 1, pageSize 10; Table pageIndex starts at 0 | Filter changes reset page; sorting/visibility/selection are not URL keys |
+
+**V:** The hook initializes local filters from search but does not synchronize them through an effect when browser history changes. Pagination is derived from current search. `ensurePageInRange` only corrects out-of-range pages when pageCount > 0. Refresh/share support is not proof of full back/forward or empty-pagination correctness.
+
+Pagination uses 32px controls, page sizes 10/20/30/40/50, current `Page X of Y`, previous/next, and first/last where space permits. `getPageNumbers` shows all pages up to five, otherwise boundaries and ellipses. There is **no current item range** such as "1-10 of 100". Under `@2xl/content` (672px) it stacks in reverse; first/last hide below `@md/content` (448px). The two page-label visibility rules leave a static 672-767px container gap to verify; this is not the 768px viewport mobile rule.
+
+[BulkActions][bulk] is viewport-fixed at bottom 24px, centered, z-50, with a 14px radius, blur, `shadow-xl` and hover scale 1.05. It appears for selection, announces counts politely, and has Arrow/Home/End navigation. Escape skips clearing when the event target or active element is a dropdown trigger/content; it does not simply test whether a menu is open. Otherwise Escape clears selection. **R:** Verify clipping, zoom, mobile reachability and modal stacking when adapting it.
+
+<a id="pages"></a>
+## Page Patterns and Actual Behavior
+
+### Dashboard
+
+[Dashboard][dashboard] has Overview and Analytics tabs; Reports and Notifications are disabled. Overview metrics use a one-column grid, two at `sm`, four at `lg`; lower panels form a seven-track `lg` grid split 4/3. RecentSales combines avatar fallback, name/email and right-aligned amount.
+
+[Overview chart][overview] is a 350px Recharts BarChart, monthly mock values, primary bars with 4px top corners, 12px `#888888` axes, no tick or axis lines, and dollar-formatted Y ticks. [Analytics chart][analytics-chart] is a 300px AreaChart with primary clicks (fill opacity .15) and muted-foreground uniques (.1), weekday data and the same axis treatment. Analytics also uses SimpleBarList with 10px-high rounded bars, 12px labels and tabular values; it is not a generic Progress primitive.
+
+There are no Tooltip/Legend components in these charts, no chart-token series mapping, and no chart loading/empty/error branches. Download has no handler; dashboard top-nav example paths are not registered business destinations. **R:** For live analytics add accessible series/value descriptions, loading, empty and retry states, and a real export handler without claiming the demo provides them.
+
+### Tasks
+
+[Tasks][tasks] is a client-data table with label, title, status and priority patterns. Status values include backlog/todo/in progress/done/canceled; priority uses low/medium/high with icons. Preserve schema values and displayed labels rather than translating enum identifiers.
+
+Create/update is [TasksMutateDrawer][task-sheet], implemented with **Sheet**, not Dialog. It has required title/status/label/priority, SelectDropdowns and radio choices, and a footer submit action; submit displays data, resets and closes. Single delete uses ConfirmDialog; Make a copy and Favorite are disabled demo row actions.
+
+[Import][task-import] uses a `sm:max-w-sm` Dialog and file input. Validation requires a nonempty FileList and first-file MIME `text/csv`; the handler only displays name/size/type. It does not parse CSV, upload, create rows, or provide progress, size limits or drag-and-drop. **R:** Those require explicit product work and server validation, not a visual specification assumption.
+
+Bulk status/priority/export/delete actions simulate feedback via a two-second promise. Bulk delete requires trimmed exact `DELETE`, then clears selection and toasts; it does not remove data. Source pending behavior is not universal repeat-submit protection.
+
+### Users
+
+[Users][users] combines username/status/role filters, sticky-column table, row menus, invite/create/edit/delete overlays and bulk actions. Role values are `superadmin/admin/manager/cashier`; status colors are recorded above. Role labels are not an authorization implementation.
+
+[Create/edit][user-dialog] uses a `sm:max-w-lg` Dialog with a 26.25rem (420px) scrolling form region, a six-column label/control layout (2/4) and 16px gaps. It does **not** automatically stack labels on narrow screens. Fields include first/last name, username, email, phone, role, password and confirmation. New password validation requires at least eight characters, lowercase and a digit; edit can leave password empty. Confirmation is disabled until the password field is dirty. Preserve the actual Zod schema, not the looser auth-page password rule.
+
+[Invite][user-invite] uses a `sm:max-w-md` (448px) Dialog with required email/role and optional description. Submit displays data, resets and closes; no invitation email is sent. Single delete requires the trimmed exact username; bulk delete requires `DELETE`, simulates two seconds and clears selection. Neither is a persistent deletion. **R:** When connecting real requests, gate repeat submits, keep failed forms recoverable, and confirm the affected scope.
+
+### Apps
+
+[Apps][apps] is a scrollable integration **list/grid**, not a data table. URL keys are `filter/type/sort`; type is `all/connected/notConnected`, sort `asc/desc`, with client name filtering/sorting and local state initialized from search. Like table filters, subsequent browser-history synchronization is not guaranteed.
+
+Grid is one column, two at `md`, three at `lg`, with 16px gaps. Items use `rounded-lg border p-4 hover:shadow-md` (10px radius), 40px brand icon areas, two-line descriptions, and the functional `faded-bottom` overlay. Connected buttons use blue exceptions. Connect buttons have no action; no zero-result branch or actual integration authorization is present.
+
+### Chats
+
+[Chats][chats] reads static `convo.json`. Search trims and matches full names; choosing a person changes local selection. The list is full width then 224px at `sm`, 288px at `lg`, 320px at `2xl`. Below **640px**, the selected conversation overlays the main region at z-50, with a Back button clearing mobile selection; from `sm` it is a split view. This differs from the 768px sidebar boundary.
+
+History is grouped by `d MMM, yyyy`, timestamps use `h:mm a`, and a reverse-column scroll area keeps the sample order. Bubbles max at 288px, use 12px/8px padding, wrap words, and have local 16px corner shapes; outgoing is primary/90 with tinted foreground, incoming muted. The initial unselected desktop panel offers "Send message".
+
+Composer form has **no submit handler or message mutation**. Send can trigger native form submission; attachments, phone/video and more controls have no implemented action. There is no real unread tracking, streaming, delivery, upload or persistence. [NewChat][new-chat] is a 600px Dialog with Command search and removable selection badges; Chat is disabled with no selection and otherwise only shows submitted data. Close resets selections. **R:** Treat message delivery, accessible icon labels, error/retry and attachment handling as separate implementation work.
+
+### Authentication
+
+[Auth pages][auth] include `/sign-in`, `/sign-in-2`, `/sign-up`, `/forgot-password`, and `/otp`. Shared auth layout is centered; SignIn2 uses two columns at `lg` and hides its light/dark dashboard screenshot below that breakpoint. Do not apply its image composition to ordinary admin pages.
+
+Sign-in validates email/password (minimum seven characters), disables submission while simulating a two-second promise, stores a mock user/token, and follows the redirect or home route. Sign-up validates matching passwords and simulates loading; forgot-password shows a two-second promise and navigates to OTP. OTP requires exactly six characters, disables Verify until complete/loading, then shows data and navigates home after one second. It is not evidence of verified server credentials, sent email, or validated OTP codes. Social buttons and `/terms`/`/privacy` links are unimplemented destinations/actions in this snapshot.
+
+**R:** Do not log/toast real passwords or tokens by copying demo handlers. Production credentials, request errors, resend/rate limits and account recovery must be implemented against the consuming product's contracts.
+
+### Settings
+
+[Settings layout][settings] has five routes. Below `md`, navigation is a 48px Select; at `md` it is horizontal ScrollArea navigation; at `lg` a 20%-width vertical sidebar with 48px inter-column gap. The content section has a 576px maximum inner width from `lg`, its own scrolling and `faded-bottom`; fields use 32px group spacing.
+
+| Route | Source form behavior | Boundary |
+| --- | --- | --- |
+| `/settings` (Profile) | Username 2-30 chars, email selection, bio 4-160 chars, URL list via useFieldArray; append URL action | Submit only shows data; no profile service |
+| `/settings/account` | Name 2-30 chars, constrained DatePicker, searchable language Popover/Command | Submit only shows data; language choice does not translate the app |
+| `/settings/appearance` | Native font select, light/dark preview radio options; submit calls setFont/setTheme and shows data | Schema omits `system` although ThemeProvider can start in system |
+| `/settings/notifications` | all/mentions/none radio; email switches; security email on and disabled/`aria-readonly`; mobile checkbox | No notification service or saved server preferences |
+| `/settings/display` | Multiple item checkboxes with a nonempty selection rule | Submit only shows data; does not alter sidebar visibility |
+
+**V:** [AppearanceForm][appearance] casts initial theme to light/dark without converting `system`; a system-default submission can fail schema validation until a valid theme is selected. There is no universal dirty-state navigation guard, saving spinner, server failure or saved-state persistence across these forms.
+
+### Optional Clerk Integration
+
+[Clerk route][clerk] requires `VITE_CLERK_PUBLISHABLE_KEY`. Without it, an instructional Alert page is shown. With it, ClerkProvider renders hosted-library SignIn/SignUp routes. This is third-party behavior, not the mock sign-in flow.
+
+`/clerk/user-management` still renders the mock UsersTable dataset. Its component checks Clerk loading/sign-in state, shows a spinner, and starts an unauthorized five-second redirect countdown after the explanatory LearnMore Popover closes; the redirect can be cancelled. The `_authenticated` layout name alone is not an authorization guard. The root Clerk provider does not configure an appearance/dark/RTL adapter. **V:** Real Clerk sessions, redirects, theming and remote data are not verified by this source audit.
+
+### Errors, Help, and Request Feedback
+
+[Error family][errors] covers standalone `/401 /403 /404 /500 /503` and shell-contained `/errors/$error` mapping unauthorized/forbidden/not-found/internal-server-error/maintenance-error; unknown values use NotFound. Most show the 112px code, short explanation, history Back and Home. 401 does not directly provide a Sign In button; 503's Learn more has no handler. GeneralError `minimal` omits code/actions. Help Center is ComingSoon, not a knowledge base or working support workflow.
+
+[main.tsx][entry] configures Query request feedback: 401 resets auth, toasts and redirects to sign-in with a redirect search value; 500 toasts and navigates to /500 only in production; 403 navigation is commented out. Queries skip retries for Axios 401/403, use development/production-specific retries, 10-second stale time and production focus refetch. Mutation errors call handleServerError. These shared hooks do not turn static Tasks/Users/Apps into API-backed pages.
+
+<a id="states"></a>
 ## Interaction State Matrix
 
-| State | Required treatment |
-| --- | --- |
-| Hover | Semantic accent or controlled opacity change; no layout shift |
-| Focus visible | Ring-colored border plus 3px ring; keyboard-visible and unobscured |
-| Active/pressed | Immediate feedback without changing control dimensions |
-| Selected | Accent surface and foreground, plus state semantics where needed |
-| Expanded/open | Clear trigger state and correctly oriented chevron |
-| Checked/indeterminate | Control mark, semantic state, associated label, and keyboard focus |
-| Current route | Active navigation surface plus `aria-current` or equivalent semantics |
-| Sorted/filtered | Visible direction or filter summary with a clear reset path |
-| Disabled | No interaction, 50% opacity, preserved readable label |
-| Loading | Stable dimensions, progress indication, duplicate action prevented |
-| Submitting/saving | Inputs remain understandable, submit repeats are blocked, completion or failure is announced |
-| Empty | Clear message and context-appropriate next action |
-| Invalid | `aria-invalid`, destructive border/ring, adjacent explanation |
-| Destructive | Destructive token, explicit consequence, confirmation when irreversible |
+| State | Existing source treatment | Completion rule / limitation |
+| --- | --- | --- |
+| Default / filled | Component surface, placeholder/value and labels | Preserve width and density as content changes |
+| Hover | Button variants, table muted/50, nav sidebar-accent, app item shadow | Do not force one accent/scale rule on all controls |
+| Focus / focus-visible | Common 3px ring; password/sidebar/close-control exceptions | **R:** Test visibility, names, focus order and return in real compositions |
+| Active / pressed | Native/Radix state; specific nav active surface | No universal custom pressed animation |
+| Selected / checked | Table muted, active Tabs, primary control mark, nav data-active | State must not depend on color alone; indeterminate visual is not a dedicated dash |
+| Open / expanded | Radix state, Collapsible chevron and animation | Group defaultOpen is not a guaranteed route-update effect |
+| Disabled | Typically 50% opacity; pointer/cursor rules vary by component | Must be truly unavailable; checked security setting remains visible |
+| Loading / submitting | Auth disabled buttons, promise toasts, navigation bar, SelectDropdown item, Skeleton primitives | Demo CRUD does not provide uniform loading or duplicate prevention |
+| Empty | Table/Command messages, initial chat placeholder | Apps and charts lack dedicated empty branches |
+| Invalid | RHF message and aria wiring; common destructive input ring/border | PasswordInput and callers bypassing FormControl need additional wiring |
+| Request failure | Shared Query/Mutation feedback, standalone errors | Mock page handlers do not exercise server rejection/retry |
+| Success | Demo data/promise toasts, Appearance applies local preferences | Toast success is not proof of a persistent mutation |
+| Destructive | ConfirmDialog, username or DELETE gate for specified flows | Confirm affected scope; actual backend deletion is absent |
+| Recovery | Reset filters, page navigation, cancel dialogs, error Back/Home | **R:** Add retry/resend/undo only where supported by business logic |
 
-Do not communicate a state by color alone. Preserve text, icon, ARIA state, or structural cues as appropriate.
-
+<a id="responsive"></a>
 ## Responsive Behavior
 
-The primary mobile boundary is 768px: `useIsMobile()` treats widths below 768px as mobile.
+Do not collapse viewport and named-container breakpoints into one "mobile" rule. [use-mobile.tsx][mobile] compares width < 768. **D:** Values below come from Tailwind 4.1.14.
 
-### Below 768px
+| Viewport threshold | Source examples |
+| --- | --- |
+| `sm` 640px | Chat split view; dashboard two metric columns; LongText Tooltip rather than mobile Popover; Dialog width/footer variants |
+| `md` 768px | Desktop sidebar, Apps two columns, horizontal settings navigation, end of native input 16px override |
+| `lg` 1024px | Four dashboard metrics; Apps three columns; vertical settings nav; column View control; two-column auth |
+| `xl` 1280px / `2xl` 1536px | Available viewport thresholds; chat list widens at 2xl |
 
-- Replace the desktop sidebar with an 18rem Sheet and close it after navigation.
-- Keep header actions compact; move lower-priority navigation into menus.
-- Use 16px form text and full-width controls where needed.
-- Stack dialog footers, card grids, filters, and form columns in task order.
-- Keep primary actions reachable without overlapping titles or search.
-- Prioritize table columns and provide detail access; never force page-wide horizontal scrolling.
+| `@container/content` threshold | Value | Actual use |
+| --- | --- | --- |
+| `@md/content` | 448px | Pagination first/last control visibility |
+| `@2xl/content` | 672px | Pagination stacking / first page label |
+| `@3xl/content` | 768px | Second page label visibility |
+| `@4xl/content` | 896px | Users sticky-column shadow treatment |
+| `@7xl/content` | 1280px | Non-fluid Main max width |
 
-### At and Above 768px
+**R:** Keep horizontal overflow within tables and vertical scroll inside fixed layouts. Do not claim all forms stack at 768px: Users' 2/4 grid, 240px DatePicker and 200px language/font controls need narrow-screen review. Test long localized labels, empty and large datasets, zoom, portrait/landscape, theme and RTL. `html overflow-x-hidden` can conceal clipping; it is not proof of a responsive pass.
 
-- Use the selected desktop sidebar variant and collapse mode.
-- Keep the 64px header and align contextual tools on one stable row when space permits.
-- Build dashboard and form layouts with responsive grids, not fixed pixel columns.
-- Center non-fluid content at large container widths and cap it at 1280px.
+<a id="personalization"></a>
+## Theme, Direction, and Persistence
 
-Use container queries for content-dependent layout, as the authenticated inset marks the content region with `@container/content`. Test long labels, localized text, RTL, zoom, and narrow windows. Stable control and grid dimensions must prevent loading or hover states from shifting the interface.
+| Preference | Mechanism / default | Persistence |
+| --- | --- | --- |
+| Theme | [ThemeProvider][theme-provider], system/light/dark; default system; html class | Cookie `vite-ui-theme`, 365 days |
+| Font | [FontProvider][font-provider], inter/manrope/system; default inter | Cookie `font`, 365 days |
+| Direction | [DirectionProvider][direction], html dir + Radix DirectionProvider; default ltr | Cookie `dir`, 365 days |
+| Sidebar style | [LayoutProvider][layout-provider], inset/sidebar/floating; default inset | Cookie `layout_variant`, 7 days |
+| Collapse mode | icon/offcanvas/none; app default icon | Cookie `layout_collapsible`, 7 days |
+| Desktop open state | Read by AuthenticatedLayout; expanded unless cookie is false | Cookie `sidebar_state`, 7 days |
+| Mobile open state | SidebarProvider local state | Not the persisted desktop open preference |
 
-## Dark Mode and Personalization
+[ConfigDrawer][config-drawer] applies theme/direction/layout immediately. Sidebar style and layout sections are hidden below `md`. Layout labels map to Default = open, Compact = closed/icon, Full = closed/offcanvas. Reset reopens the sidebar and resets theme, direction and layout **but not font**. Appearance changes theme/font only on submit.
 
-Dark mode is a full semantic token swap under `.dark`, not a collection of per-component hard-coded overrides. Components should automatically adapt through the same token names. Cards are slightly separated from the dark background; popovers are more elevated; borders and inputs use translucent white.
+**V:** Theme classes are applied in an effect; the source does not guarantee flash-free initialization. OS theme changes update root classes but do not update the memoized `resolvedTheme` context until theme changes. Consumers of that value may become stale even when CSS colors update. Root Sonner receives the theme preference, while Clerk has no app-specific appearance mapping.
 
-The source supports light, dark, and system theme behavior, plus Inter/Manrope/system fonts, LTR/RTL direction, sidebar variant, and collapse mode. Configuration controls preview these choices without changing the application's basic hierarchy. Persist user choices and avoid flashes of the wrong theme during initialization.
+**R:** Preserve all semantic roles, local dark exceptions, portal ancestry and RTL changes. Test initial paint, OS changes while open, native controls, third-party widgets, and return from settings. Do not state that every third-party surface automatically inherits every preference.
 
-Do not infer that a custom raw color is safe because it looks acceptable in light mode. Verify text, icons, borders, focus, charts, overlays, and disabled states in both themes.
+<a id="accessibility"></a>
+## Accessibility and Content Rules
 
-## RTL and Accessibility
+The upstream README identifies local modifications to ScrollArea, Sonner and Separator and RTL adaptations to AlertDialog, Calendar, Command, Dialog, DropdownMenu, Select, Table, Sheet, Sidebar and Switch. Preserve these files during any later merge; current registry code is not a drop-in replacement.
 
-Use logical positioning and spacing throughout. Chevron direction, sheet sides, submenu borders, table alignment, switches, dialogs, selects, and navigation must follow document direction. The v2.2.1 source specifically customizes `scroll-area`, `sonner`, and `separator`, and includes RTL updates for `alert-dialog`, `calendar`, `command`, `dialog`, `dropdown-menu`, `select`, `table`, `sheet`, `sidebar`, and `switch`. Preserve and manually merge those files during upgrades.
+**S/V source findings:**
 
-Keep the source `Skip to Main` link, landmark structure, labels, accessible names, Radix keyboard behavior, visible focus, dialog titles, and avatar fallbacks. Icon-only buttons need names; unfamiliar icons need tooltips. Ensure zoom and long translated content do not overlap or clip controls.
+- [SkipToMain][skip] links to `#content`, but no matching target exists in this snapshot's Main/routes. Keep the bypass intent; **R:** wire a real focusable main destination in a product implementation.
+- Password reveal, some chat actions and badge-removal buttons have no accessible name. FormControl is not used around every custom field, so labels/errors are not universally associated.
+- CommandDialog title placement needs a real accessibility-tree check. Controlled/triggerless dialogs require explicit focus-return testing.
+- [LongText][long-text] checks overflow when its ref attaches, uses Tooltip at `sm` and Popover below, but its div triggers are not keyboard-focusable and it has no ResizeObserver. Complete-value access on keyboard/resize is not guaranteed.
+- Logical spacing and direction-aware primitives coexist with physical chart/corner/position classes. No app-wide reduced-motion rule or measured contrast report was found.
+- HTML starts `lang="en"`. The Account language field only submits demo data; RTL is not a translation system.
 
-The source is designed with accessibility in mind, but this document does not certify conformance. Validate real workflows with keyboard navigation, screen-reader semantics, contrast checks, and responsive zoom when the consuming product requires formal compliance.
+**R content contract for extensions:** Keep human-readable labels alongside status/icon/color, expose a name for every icon action, retain fallback identities, and make full critical values available beyond truncation. DatePicker uses `MMM d, yyyy`; chat uses `d MMM, yyyy` and `h:mm a`; dashboard amounts use dollar examples. Locale, currency, timezone, number precision, pluralization and translated messages must be explicit product decisions. Do not silently change enum values or assume the demo is localized.
 
-## Do's and Don'ts
+Keyboard acceptance must include Tab/Shift+Tab, Enter/Space, menu/calendar navigation, Escape, initial focus, focus trap where modal, and return to the invoking control. **D/V:** Primitives supply defaults; actual compositions, contrast, zoom and screen-reader behavior remain unverified until tested.
 
-### Do
+<a id="resources"></a>
+## Assets, Dependencies, and Business Boundaries
 
-- Use installed project components and their existing variants before creating custom UI.
-- Use semantic CSS variables and utilities for every theme-sensitive color.
-- Use `cn()` for conditional class composition and logical properties for direction.
-- Keep admin pages compact, scan-friendly, and predictable.
-- Keep filters and actions close to the data they affect.
-- Preserve URL-backed table state, loading states, confirmation flows, and keyboard shortcuts.
-- Preserve all local RTL/custom component changes when applying upstream updates.
-- Check the local component source before following current shadcn/ui examples.
+[index.html][html] loads remote Google Fonts, OS-theme-selected favicons, and an initial white theme-color. Mounted ThemeSwitch later updates that meta value for explicit dark/light, but system-dark still takes its white branch; favicon choice does not necessarily track manual app theme. [Assets][assets] contains local Logo/Clerk logos, brand icon components and configuration previews. Auth uses checked-in light/dark dashboard PNGs; public/images contains favicon variants and a dashboard image. Chat/avatar data includes remote images and paths such as `/avatars/shadcn.jpg`; these are not all bundled. NewChat's `/placeholder.svg` fallback is not a supplied public file.
 
-### Don't
+Lucide is the primary general icon set; Radix Icons is also used in tables/settings. Upstream credits Tabler for brand icons, which are local source components, not an installed `@tabler/icons-react` dependency. Preserve source artwork and fallback semantics without assuming URLs are always available.
 
-- Do not turn the interface into a gradient-heavy, oversized, floating-card SaaS landing page.
-- Do not hard-code slate, white, black, or destructive colors where a semantic token exists.
-- Do not nest cards or wrap every section in a decorative container.
-- Do not use giant headings or excessive empty space in operational screens.
-- Do not hide state, validation, or destructive consequences behind color alone.
-- Do not replace mobile navigation with a permanently squeezed desktop sidebar.
-- Do not run the latest shadcn CLI with overwrite against customized v2.2.1 components.
-- Do not treat this application release number as a shadcn/ui registry version.
+The repository's original documentation is MIT, Copyright (c) 2026 turtoncarllyle. [Upstream LICENSE][upstream-license] is MIT for upstream code. Brand marks, external avatars and hosted fonts may have separate terms; this audit does not certify all asset/font licensing or grant trademark rights. **R:** Check each actual asset/font license before redistribution or self-hosting. No upstream application source or image is redistributed by this documentation repository.
 
+The `_authenticated` route is a shell, not by itself a security boundary. Mock auth and role/status displays do not implement production access control. Preserve the consuming application's router, search schema, row identifiers, RHF/Zod models, Query error behavior, authentication and authorization contracts. Do not "fix" a UI by dropping validation or replacing request handlers with demo toasts.
+
+<a id="coverage"></a>
+## Coverage and Audit Record
+
+This matrix evaluates **documentation coverage after the static audit**, not working product features or browser certification. Complete means the relevant source pattern and its limits are described; it never implies production readiness.
+
+| Module | Prior documentation | Current coverage | Evidence / remaining limit |
+| --- | --- | --- | --- |
+| Purpose, prompts, version selection | Complete | Complete | Scope, baseline, README; current vs original snapshot now explicit |
+| Semantic colors and aliases | Mostly complete | Complete | theme.css role-to-mode values retained; explicit exceptions added |
+| Typography, motion, elevation | Partial | Complete | Body size, control exceptions, pinned default 150ms and local layers |
+| Shell and navigation | Partial | Complete | Actual 48/64/66px collapse geometry, none/mobile exception, menus |
+| All 30 UI primitives and shared controls | Partial | Complete | Component contracts + UI source; no invented installed primitives |
+| Tables, filters, pagination, bulk | Partial / inaccurate | Complete | URL/local state separation, contained overflow, confirmation scope |
+| Dashboard and charts | Partial / inaccurate | Complete | Real series, heights, no Tooltip/Legend/export implementation |
+| Tasks and Users | Partial / inaccurate | Complete | Sheet vs Dialog, validation, import/demo mutation boundaries |
+| Apps and Chats | Partial | Complete | Grid/chat breakpoint, absent integration/send handlers |
+| Auth, five settings pages, errors/help | Partial | Complete | Actual handlers, persistence, placeholders and recovery |
+| Themes/RTL and third-party widgets | Partial | Partial | Source rules complete; initial paint, Clerk and dynamic theme need runtime |
+| Accessibility/content | Partial | Partial | Concrete source gaps documented; no WCAG certification |
+| Real requests, uploads, delivery, server permissions | Not applicable | Not applicable | Not supplied by this demo; extension requirements only |
+| Generic tree, breadcrumb, route tabs, detail page, Drawer, Dropzone, Chart wrapper | Not applicable | Not applicable | Absent; tasks "drawer" is Sheet, account combobox is composition |
+| Bilingual parity / links / provenance | Partial | Complete | Same sections, facts and values; immutable source references |
+| Browser rendering / assistive technology | Unverified | Unverified | No app run, screenshots or runtime acceptance in this documentation update |
+
+Priority findings and the changes applied to this specification:
+
+| Priority | Former problem / evidence | Impact and correction | Verification |
+| --- | --- | --- | --- |
+| P1 | Old coverage matrix treated chart tooltip/legend, task dialogs, CRUD/import/chat and settings persistence as implemented; see page handlers linked above | Could generate incorrect flows. Replaced generic promises with exact composition and demo boundaries | Read actual JSX and submit/click handlers, not keywords alone |
+| P1 | Old accessibility/theme sections implied working bypass, inherited third-party themes and flash prevention; see SkipToMain, ThemeProvider, Clerk route | Could hide known usability gaps. Separated S/D/R/V and added focused runtime criteria | Static checks recorded; browser proof remains V |
+| P2 | Old 14px body, universal 16px Select, uniform focus/200ms, accent table rows and current item range | Could produce wrong density/states. Corrected against base CSS, primitives and pinned Tailwind defaults | Exact token mapping, class/element and breakpoint comparison |
+| P2 | Old 48px collapsed width applied to every variant; only 768px boundary emphasized | Could mis-size inset and chat/pagination. Added variant geometry and distinct viewport/container tables | Sidebar formulas, chat sm and pagination container classes |
+| P2 | Dependencies recorded mainly as major versions; latest component behavior could leak in | Added exact lock resolutions, local overrides, source links, absent-component boundary | Match package/importer and installed source inventory |
+| P3 | Original Release snapshot and maintained same-version docs could be confused | Same 2.2.1 maintained on main; keep historical tag/assets and use commit pins for reproducibility | Check README URLs, remote main and original tag/assets |
+
+<a id="acceptance"></a>
+## Acceptance and Same-Version Maintenance
+
+This is a correction/enrichment of **2.2.1**, not an upstream upgrade or a new numbered revision. `versions/2.2.1` and YAML `version: "2.2.1"` stay unchanged. Current documents are maintained on main; Git commits record changes. Existing `v2.2.1` and its original Release assets remain the initial publication snapshot, not an automatically updated copy of main. Use a full commit SHA to pin a particular maintained document.
+
+Document checks for this update:
+
+1. Strict UTF-8 decoding; valid front matter with version/name/description/colors/typography; same bilingual section anchors, semantic rules, dimensions and token mappings.
+2. Compare all 23 direct colors per mode and eight aliases to theme.css, not just occurrences of OKLCH strings. Verify dependency resolutions and all referenced source paths against the pinned tree.
+3. Check component/page/state evidence, relative links, immutable upstream links, version index, current-download vs snapshot wording and license attribution.
+4. Confirm only the six repository files are tracked and the local upstream snapshot remains ignored; keep tag/assets unchanged and verify pushed main content.
+
+Separate product/runtime acceptance, **not performed by this documentation update**:
+
+1. Render target pages at narrow/mobile/desktop widths, plus 640/768/1024 viewport and 448/672/768/896/1280 content thresholds; inspect overflow, form grid, table sticky columns and pagination labels.
+2. Test light/dark/system, OS changes while open, font fallback, RTL, zoom, reduced motion, Dialog/Sheet/Command focus and background scrolling.
+3. Exercise keyboard bypass, names/error associations, full long-text access and screen-reader announcements; measure contrast for tokens, statuses and charts.
+4. For real integrations, test credential/permission failures, pending/duplicate submits, empty data, retries, file validation, batch scope and recovery with controlled data. Clerk needs configured credentials and service access.
+
+No dependency installation, application build, server run, screenshots or UI conformance claim is part of this static documentation audit. Any untested runtime item remains V.
+
+<a id="agent-guide"></a>
 ## Agent Prompt Guide
 
-Use this compact instruction when delegating UI work:
-
 ```text
-Build this operational interface in the shadcn-admin 2.2.1 visual language.
-Use the installed local shadcn/Radix components and semantic OKLCH tokens. Keep
-the 14px work-focused density, 10px base radius system, thin borders, restrained
-shadows, 64px header, responsive sidebar, dark mode, RTL, visible focus, and all
-loading/empty/invalid/disabled states. Do not add marketing composition, raw
-theme colors, nested cards, or overwrite customized components from the latest
-shadcn registry.
+Read DESIGN.md for shadcn-admin 2.2.1 before changing this interface.
+Treat S as pinned source facts, D as pinned dependency behavior, R as completion
+rules, and V as items requiring verification. Reuse local components, semantic
+OKLCH tokens, source-specific density, the 10px base radius system and actual
+page/viewport/container rules. Preserve routing, schemas, permissions and local
+RTL customizations. Do not invent missing APIs, treat demo toasts as mutations,
+or overwrite components from the current shadcn registry. Identify applicable
+states and source exceptions, implement only the requested product behavior,
+and report static checks separately from browser/runtime validation.
 ```
 
-Before finishing, compare the result against this checklist:
+<a id="known-gaps"></a>
+## Known Gaps and Non-Goals
 
-1. Does the page look like the v2.2.1 application rather than a generic dashboard?
-2. Are semantic tokens used consistently in both light and dark modes?
-3. Are sidebar, header, content width, density, radii, borders, and shadows source-faithful?
-4. Are component compositions and every relevant interaction state complete?
-5. Does the page remain usable below 768px, in RTL, at zoom, and with long text?
-6. Are keyboard focus, accessible names, Dialog/Sheet titles, and error semantics present?
-7. Were local component customizations preserved?
+Upstream explicitly says it is not a starter template. This specification is sufficient context for source-faithful page styling/composition, but not a replacement for local component APIs, shadcn/ui documentation, application code, or product/backend design. Mock-data boundaries, source defects and unverified third-party/accessibility behavior remain as described above. Future upstream versions need separate evidence; they must not silently replace the 2.2.1 baseline.
 
-## Known Gaps and Source Boundaries
+This independent work is not an official shadcn-admin or shadcn/ui specification or endorsement.
 
-- shadcn-admin explicitly describes itself as a reusable dashboard collection, not a starter project. This document does not turn it into an application template.
-- The specification is pinned to shadcn-admin v2.2.1. Current shadcn/ui registry APIs, presets, tokens, or component structure may differ.
-- Some components are intentionally modified for RTL or project-specific behavior. Automated overwrite is unsafe without a per-file diff and manual merge.
-- The document describes visual and interaction expectations; it does not define routing, authentication, authorization, API contracts, data models, or product-specific validation.
-- Additional upstream pages and options may contain localized exceptions. Consult the checked-in v2.2.1 source before changing component markup or behavior.
-- Accessibility requirements may require further product-specific testing and improvements. Make those improvements without erasing the source visual language.
-- This is an independent source analysis, not an official shadcn-admin or shadcn/ui specification or endorsement.
-
+<a id="sources"></a>
 ## Sources
 
-- [satnaing/shadcn-admin](https://github.com/satnaing/shadcn-admin)
-- [shadcn-admin v2.2.1](https://github.com/satnaing/shadcn-admin/releases/tag/v2.2.1)
-- [shadcn-admin live demo](https://shadcn-admin.netlify.app/)
-- [shadcn/ui documentation](https://ui.shadcn.com/)
-- [Google Stitch DESIGN.md overview](https://stitch.withgoogle.com/docs/design-md/overview/)
+All `src` references below resolve to the same immutable upstream commit, not the moving default branch. The [upstream release](https://github.com/satnaing/shadcn-admin/releases/tag/v2.2.1) identifies the application version. The [live demo](https://shadcn-admin.netlify.app/), [shadcn/ui docs](https://ui.shadcn.com/), and [DESIGN.md overview](https://stitch.withgoogle.com/docs/design-md/overview/) are contextual references only.
 
-Source values in this document were derived primarily from `components.json`, `src/styles/theme.css`, `src/styles/index.css`, `src/components/ui/`, `src/components/layout/`, and the v2.2.1 changelog.
+[upstream]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434
+[lock]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/pnpm-lock.yaml
+[package]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/package.json
+[config]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/components.json
+[theme]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/styles/theme.css
+[base-css]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/styles/index.css
+[html]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/index.html
+[font-provider]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/context/font-provider.tsx
+[main]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/layout/main.tsx
+[shell]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/layout/authenticated-layout.tsx
+[sidebar]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/ui/sidebar.tsx
+[header]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/layout/header.tsx
+[nav]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/layout/nav-group.tsx
+[nav-data]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/layout/data/sidebar-data.ts
+[ui]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/ui
+[button]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/ui/button.tsx
+[form]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/ui/form.tsx
+[calendar]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/ui/calendar.tsx
+[date-picker]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/date-picker.tsx
+[confirm]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/confirm-dialog.tsx
+[command-menu]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/command-menu.tsx
+[command]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/ui/command.tsx
+[sonner]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/ui/sonner.tsx
+[root-route]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/routes/__root.tsx
+[progress]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/navigation-progress.tsx
+[data-table]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/data-table
+[tasks-table]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/tasks/components/tasks-table.tsx
+[users-table]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/users/components/users-table.tsx
+[url-state]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/hooks/use-table-url-state.ts
+[bulk]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/data-table/bulk-actions.tsx
+[dashboard]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/dashboard/index.tsx
+[overview]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/dashboard/components/overview.tsx
+[analytics-chart]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/dashboard/components/analytics-chart.tsx
+[tasks]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/tasks
+[task-sheet]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/tasks/components/tasks-mutate-drawer.tsx
+[task-import]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/tasks/components/tasks-import-dialog.tsx
+[users]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/users
+[user-data]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/users/data/data.ts
+[user-dialog]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/users/components/users-action-dialog.tsx
+[user-invite]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/users/components/users-invite-dialog.tsx
+[apps]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/apps/index.tsx
+[chats]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/chats/index.tsx
+[new-chat]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/chats/components/new-chat.tsx
+[auth]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/auth
+[settings]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/settings
+[appearance]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/settings/appearance/appearance-form.tsx
+[clerk]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/routes/clerk/route.tsx
+[errors]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/features/errors
+[entry]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/main.tsx
+[mobile]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/hooks/use-mobile.tsx
+[theme-provider]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/context/theme-provider.tsx
+[direction]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/context/direction-provider.tsx
+[layout-provider]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/context/layout-provider.tsx
+[config-drawer]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/config-drawer.tsx
+[skip]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/skip-to-main.tsx
+[long-text]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/long-text.tsx
+[assets]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/assets
+[upstream-license]: https://github.com/satnaing/shadcn-admin/blob/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/LICENSE
+[tw-theme]: https://unpkg.com/tailwindcss@4.1.14/theme.css
+[shared]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components
+[layout-components]: https://github.com/satnaing/shadcn-admin/tree/0217f8cb73af66f3cbf4141d5e0d00e1c5c30434/src/components/layout
