@@ -51,6 +51,17 @@ Invoke-WebRequest `
   -OutFile ".\DESIGN.md"
 ```
 
+If the raw download host times out, use the GitHub Contents API for the same file without installing dependencies:
+
+```powershell
+Invoke-WebRequest `
+  -Uri "https://api.github.com/repos/turtoncarllyle/shadcn-admin-design-md/contents/versions/2.2.1/DESIGN.md?ref=main" `
+  -Headers @{ Accept = "application/vnd.github.raw+json" } `
+  -OutFile ".\DESIGN.md"
+```
+
+For Chinese, change the URL filename to `DESIGN.zh-CN.md`. To pin content, replace `ref=main` with the chosen full commit SHA. The public API is subject to GitHub rate limits.
+
 Example prompt:
 
 ```text

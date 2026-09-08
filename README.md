@@ -51,6 +51,17 @@ Invoke-WebRequest `
   -OutFile ".\DESIGN.md"
 ```
 
+如果 raw 下载域名超时，可使用 GitHub Contents API 获取相同文件，不需要安装依赖：
+
+```powershell
+Invoke-WebRequest `
+  -Uri "https://api.github.com/repos/turtoncarllyle/shadcn-admin-design-md/contents/versions/2.2.1/DESIGN.md?ref=main" `
+  -Headers @{ Accept = "application/vnd.github.raw+json" } `
+  -OutFile ".\DESIGN.md"
+```
+
+获取中文时将 URL 文件名改为 `DESIGN.zh-CN.md`；固定内容时将 `ref=main` 改为所选完整提交 SHA。公开 API 受 GitHub 请求频率限制。
+
 示例提示词：
 
 ```text
